@@ -104,7 +104,7 @@ func getBotMenu(chatID int64, bot *tgbotapi.BotAPI) {
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("💣 Bomb", "bomb"),
-			tgbotapi.NewInlineKeyboardButtonData("🪙 Token", "token"),
+			//tgbotapi.NewInlineKeyboardButtonData("🪙 Token", "token"),
 		),
 	)
 
