@@ -2,17 +2,25 @@ package main
 
 import (
 	"log"
+	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI("8364134131:AAFZCyJWV_SJlbEEc0Uvhwl_wAaudRWFAfQ")
+	// Берём токен из переменной окружения
+	token := os.Getenv("BOT_TOKEN")
+	if token == "" {
+		log.Fatal("BOT_TOKEN is not set")
+	}
+
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("Bot authorized as @%s", bot.Self.UserName)
+	log.Println("Bot started")
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
@@ -21,7 +29,7 @@ func main() {
 
 	for update := range updates {
 
-		// Пришло обычное сообщение — показываем кнопки
+		// Любое сообщение — показываем кнопки
 		if update.Message != nil {
 			keyboard := tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
@@ -39,13 +47,12 @@ func main() {
 			bot.Send(msg)
 		}
 
-		// Нажатие на кнопку
+		// Обработка нажатия кнопок
 		if update.CallbackQuery != nil {
 			chatID := update.CallbackQuery.Message.Chat.ID
 			data := update.CallbackQuery.Data
 
 			var text string
-
 			switch data {
 			case "bomb":
 				text = "Нажата кнопка 💣 Bomb"
@@ -55,11 +62,10 @@ func main() {
 				text = "Неизвестная кнопка"
 			}
 
-			// Отправляем сообщение
 			msg := tgbotapi.NewMessage(chatID, text)
 			bot.Send(msg)
 
-			// Обязательно подтверждаем callback
+			// Подтверждаем callback (обязательно)
 			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
 			bot.Request(callback)
 		}
