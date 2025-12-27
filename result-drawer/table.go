@@ -15,23 +15,41 @@ import (
 	"golang.org/x/image/draw"
 )
 
-func DrawImageWithTables(
-	bombPlayers []tacticus.PlayerData,
-	output string,
-) error {
+// Основные цвета
+var (
+	ColorHeader  = color.RGBA{R: 235, G: 225, B: 245, A: 255} // светло-фиолетовый для заголовка
+	ColorGray1   = color.RGBA{R: 240, G: 240, B: 240, A: 255} // зебра светлая
+	ColorGray2   = color.RGBA{R: 255, G: 255, B: 255, A: 255} // зебра темная
+	ColorGreen1  = color.RGBA{R: 220, G: 245, B: 220, A: 255} // готово светло-зеленый
+	ColorGreen2  = color.RGBA{R: 210, G: 235, B: 210, A: 255} // готово чуть темнее
+	ColorRed1    = color.RGBA{R: 255, G: 200, B: 200, A: 255} // красная зебра светлая
+	ColorRed2    = color.RGBA{R: 255, G: 150, B: 150, A: 255} // красная зебра темнее
+	ColorYellow1 = color.RGBA{R: 255, G: 255, B: 200, A: 255} // желтая зебра светлая
+	ColorYellow2 = color.RGBA{R: 255, G: 255, B: 150, A: 255} // желтая зебра темнее
+)
 
-	rowHeight := 30
+const (
+	RowHeight          = 30  // высота строки
+	Padding            = 8   // отступ текста от левого края ячейки
+	ColNameWidth       = 200 // ширина колонки "Имя"
+	BombColTimeWidth   = 150 // ширина колонки "Осталось"
+	TokenColCountWidth = 70  // ширина колонки "Токены"
+	TokenColTimeWidth  = 150 // ширина колонки "До следующего"
+)
+
+func DrawImageWithTables(bombPlayers []tacticus.PlayerData, output string) error {
+
 	gap := 20
 
-	bombTableWidth := 420
-	tokenTableWidth := 600
+	bombTableWidth := ColNameWidth + BombColTimeWidth
+	tokenTableWidth := ColNameWidth + TokenColCountWidth + TokenColTimeWidth
 
 	rows := len(bombPlayers)
-	height := rowHeight*(rows+1) + 10
+	height := RowHeight*(rows+1) + 10
 	width := bombTableWidth + gap + tokenTableWidth
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	draw.Draw(img, img.Bounds(), &image.Uniform{color.White}, image.Point{}, draw.Src)
+	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
 	// ---- Шрифт ----
 	fontBytes, err := os.ReadFile("fonts/Arial.ttf")
@@ -60,7 +78,9 @@ func DrawImageWithTables(
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		_ = out.Close()
+	}(out)
 
 	return png.Encode(out, img)
 }
@@ -71,16 +91,7 @@ func drawBombTable(
 	players []tacticus.PlayerData,
 	offsetX, offsetY int,
 ) {
-	rowHeight := 30
-	colName := 260
-	colTime := 160
-	padding := 8
-	width := colName + colTime
-
-	grayBg := image.NewUniform(color.RGBA{240, 240, 240, 255})
-	whiteBg := image.NewUniform(color.White)
-	green1 := image.NewUniform(color.RGBA{220, 245, 220, 255})
-	green2 := image.NewUniform(color.RGBA{210, 235, 210, 255})
+	width := ColNameWidth + BombColTimeWidth
 
 	sort.Slice(players, func(i, j int) bool {
 		return players[i].Progress.GuildRaid.BombTokens.NextTokenInSeconds <
@@ -89,28 +100,28 @@ func drawBombTable(
 
 	// отрисовка заголовка
 	drawTableHeader(img, c, offsetX, offsetY, width,
-		"💣 Bomb",
+		"Бомбы",
 		[]string{"Имя", "Осталось"},
-		[]int{colName, colTime},
+		[]int{ColNameWidth, BombColTimeWidth},
 	)
 
 	for i, p := range players {
-		y1 := offsetY + (i+2)*rowHeight // +2, чтобы учесть две строки заголовка
-		y2 := y1 + rowHeight
+		y1 := offsetY + (i+2)*RowHeight // +2, чтобы учесть две строки заголовка
+		y2 := y1 + RowHeight
 
 		seconds := p.Progress.GuildRaid.BombTokens.NextTokenInSeconds
 
 		var bg *image.Uniform
 		if seconds <= 0 {
 			if i%2 == 0 {
-				bg = green1
+				bg = image.NewUniform(ColorGreen1)
 			} else {
-				bg = green2
+				bg = image.NewUniform(ColorGreen2)
 			}
 		} else if i%2 == 0 {
-			bg = grayBg
+			bg = image.NewUniform(color.White)
 		} else {
-			bg = whiteBg
+			bg = image.NewUniform(ColorGray1)
 		}
 
 		draw.Draw(img, image.Rect(offsetX, y1, offsetX+width, y2), bg, image.Point{}, draw.Src)
@@ -126,33 +137,24 @@ func drawBombTable(
 			)
 		}
 
-		c.DrawString(p.Details.Name, freetype.Pt(offsetX+padding, y2-10))
-		c.DrawString(timeStr, freetype.Pt(offsetX+colName+padding, y2-10))
+		c.DrawString(p.Details.Name, freetype.Pt(offsetX+Padding, y2-10))
+		c.DrawString(timeStr, freetype.Pt(offsetX+ColNameWidth+Padding, y2-10))
 	}
+
+	// рисуем сетку
+	drawHorizontalLines(img, offsetX, offsetY, ColNameWidth+BombColTimeWidth, len(players), RowHeight, 2)
+	drawVerticalLines(img, offsetX, offsetY, []int{ColNameWidth, BombColTimeWidth}, len(players), RowHeight, 2)
 }
 
 func drawTokenTable(img *image.RGBA, c *freetype.Context, players []tacticus.PlayerData, offsetX, offsetY int, totalRows int) {
-	rowHeight := 30
-	colNameWidth := 240
-	colCountWidth := 140
-	colTimeWidth := 180
-	totalWidth := colNameWidth + colCountWidth + colTimeWidth
+	totalWidth := ColNameWidth + TokenColCountWidth + TokenColTimeWidth
 
 	// заголовок
 	drawTableHeader(img, c, offsetX, offsetY, totalWidth,
-		"🪙 Token",
+		"Токены",
 		[]string{"Имя", "Токены", "До следующего"},
-		[]int{colNameWidth, colCountWidth, colTimeWidth},
+		[]int{ColNameWidth, TokenColCountWidth, TokenColTimeWidth},
 	)
-
-	whiteBg := image.NewUniform(color.White)
-	grayBg := image.NewUniform(color.RGBA{245, 245, 245, 255})
-	red1 := image.NewUniform(color.RGBA{255, 200, 200, 255})
-	red2 := image.NewUniform(color.RGBA{255, 150, 150, 255})
-	yellow1 := image.NewUniform(color.RGBA{255, 255, 200, 255})
-	yellow2 := image.NewUniform(color.RGBA{255, 255, 150, 255})
-	green1 := image.NewUniform(color.RGBA{220, 245, 220, 255})
-	green2 := image.NewUniform(color.RGBA{210, 235, 210, 255})
 
 	sort.Slice(players, func(i, j int) bool {
 		tokenInfoI := players[i].Progress.GuildRaid.Tokens
@@ -165,36 +167,33 @@ func drawTokenTable(img *image.RGBA, c *freetype.Context, players []tacticus.Pla
 	})
 
 	for i, p := range players {
-		y1 := offsetY + (i+2)*rowHeight
-		y2 := y1 + rowHeight
+		y1 := offsetY + (i+2)*RowHeight
+		y2 := y1 + RowHeight
 
-		bg := whiteBg
-		if i%2 == 0 {
-			bg = grayBg
-		}
+		bg := image.NewUniform(color.White)
 
 		if p.Progress.GuildRaid.Tokens.Current == 3 {
 			if i%2 == 0 {
-				bg = red1
+				bg = image.NewUniform(ColorRed1)
 			} else {
-				bg = red2
+				bg = image.NewUniform(ColorRed2)
 			}
 		} else if p.Progress.GuildRaid.Tokens.Current == 2 {
 			if i%2 == 0 {
-				bg = yellow1
+				bg = image.NewUniform(ColorYellow1)
 			} else {
-				bg = yellow2
+				bg = image.NewUniform(ColorYellow2)
 			}
 		} else if p.Progress.GuildRaid.Tokens.Current == 1 {
 			if i%2 == 0 {
-				bg = green1
+				bg = image.NewUniform(ColorGreen1)
 			} else {
-				bg = green2
+				bg = image.NewUniform(ColorGreen2)
 			}
 		} else if i%2 == 0 {
-			bg = grayBg
+			bg = image.NewUniform(color.White)
 		} else {
-			bg = whiteBg
+			bg = image.NewUniform(ColorGray1)
 		}
 
 		draw.Draw(img, image.Rect(offsetX, y1, offsetX+totalWidth, y2), bg, image.Point{}, draw.Src)
@@ -217,11 +216,15 @@ func drawTokenTable(img *image.RGBA, c *freetype.Context, players []tacticus.Pla
 
 		x := offsetX + 8
 		c.DrawString(p.Details.Name, freetype.Pt(x, y2-10))
-		x += colNameWidth
+		x += ColNameWidth
 		c.DrawString(strconv.Itoa(p.Progress.GuildRaid.Tokens.Current), freetype.Pt(x, y2-10))
-		x += colCountWidth
+		x += TokenColCountWidth
 		c.DrawString(timeStr, freetype.Pt(x, y2-10))
 	}
+
+	// рисуем сетку
+	drawHorizontalLines(img, offsetX, offsetY, ColNameWidth+TokenColCountWidth+TokenColTimeWidth, len(players), RowHeight, 2)
+	drawVerticalLines(img, offsetX, offsetY, []int{ColNameWidth, TokenColCountWidth, TokenColTimeWidth}, len(players), RowHeight, 2)
 }
 
 func drawTableHeader(
@@ -232,21 +235,44 @@ func drawTableHeader(
 	columnNames []string,
 	colWidths []int,
 ) {
-	rowHeight := 30
-	headerBg := image.NewUniform(color.RGBA{235, 225, 245, 255})
-
 	// фон заголовка (2 ряда: название + колонки)
-	draw.Draw(img, image.Rect(offsetX, offsetY, offsetX+tableWidth, offsetY+rowHeight*2), headerBg, image.Point{}, draw.Src)
+	draw.Draw(img, image.Rect(offsetX, offsetY, offsetX+tableWidth, offsetY+RowHeight*2), image.NewUniform(ColorHeader), image.Point{}, draw.Src)
 
 	// центрируем название таблицы
 	textWidth := len([]rune(title)) * 8 // примерное измерение
 	centerX := offsetX + (tableWidth-textWidth)/2
-	c.DrawString(title, freetype.Pt(centerX, offsetY+rowHeight-10))
+	c.DrawString(title, freetype.Pt(centerX, offsetY+RowHeight-10))
 
 	// названия колонок
 	x := offsetX + 8
 	for i, name := range columnNames {
-		c.DrawString(name, freetype.Pt(x, offsetY+rowHeight*2-10))
+		c.DrawString(name, freetype.Pt(x, offsetY+RowHeight*2-10))
 		x += colWidths[i]
+	}
+}
+
+func drawHorizontalLines(img *image.RGBA, offsetX, offsetY, width, rows, rowHeight int, headerRows int) {
+	for i := 0; i <= rows+headerRows; i++ {
+		y := offsetY + i*rowHeight
+		for x := offsetX; x < offsetX+width; x++ {
+			img.Set(x, y, color.Black)
+		}
+	}
+}
+
+func drawVerticalLines(img *image.RGBA, offsetX, offsetY int, colWidths []int, rows, rowHeight, headerRows int) {
+	for i := 0; i <= len(colWidths); i++ {
+		x := offsetX
+		for j := 0; j < i; j++ {
+			x += colWidths[j]
+		}
+
+		startY := offsetY
+		if i != 0 && i != len(colWidths) {
+			startY += rowHeight
+		}
+		for y := startY; y <= offsetY+(rows+headerRows)*rowHeight; y++ {
+			img.Set(x, y, color.Black)
+		}
 	}
 }
