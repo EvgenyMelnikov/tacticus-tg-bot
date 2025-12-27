@@ -89,14 +89,15 @@ func runFetchBombProcess(chatID int64, bot *tgbotapi.BotAPI) bool {
 	done <- true
 	if err != nil {
 		_, _ = bot.Send(tgbotapi.NewMessage(chatID, imagePath))
-		return true
+		return false
 	}
 
 	// Отправляем картинку в Telegram
 	photoMsg := tgbotapi.NewPhoto(chatID, tgbotapi.FilePath(imagePath))
 	_, _ = bot.Send(photoMsg)
+	_ = os.Remove(imagePath)
 
-	return false
+	return true
 }
 
 func getBotMenu(chatID int64, bot *tgbotapi.BotAPI) {
@@ -134,7 +135,7 @@ func fetchPlayersBombsInfo() (string, error) {
 
 	resultPlayers := tacticus.FetchPlayers(players)
 	imagePath := "table.png"
-	err = table.DrawTable(resultPlayers, imagePath)
+	err = table.DrawImageWithTables(resultPlayers, imagePath)
 	if err != nil {
 		log.Println("Ошибка генерации картинки:", err)
 		return "❌ Ошибка генерации картинки", err

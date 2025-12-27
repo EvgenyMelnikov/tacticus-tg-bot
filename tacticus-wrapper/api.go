@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"sort"
 	yandex "tacticus-tg-bot/yandex-tables-wrapper"
 )
 
@@ -58,11 +57,6 @@ func FetchPlayers(players []yandex.Player) []PlayerData {
 
 		tacticusPlayers = append(tacticusPlayers, resp.Player)
 	}
-
-	sort.Slice(tacticusPlayers, func(i, j int) bool {
-		return tacticusPlayers[i].Progress.GuildRaid.BombTokens.NextTokenInSeconds <
-			tacticusPlayers[j].Progress.GuildRaid.BombTokens.NextTokenInSeconds
-	})
 
 	return tacticusPlayers
 }
