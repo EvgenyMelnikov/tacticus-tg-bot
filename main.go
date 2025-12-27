@@ -29,7 +29,7 @@ func main() {
 
 	for update := range updates {
 
-		// Любое сообщение — показываем кнопки
+		// Любое сообщение показываем кнопки
 		if update.Message != nil {
 			keyboard := tgbotapi.NewInlineKeyboardMarkup(
 				tgbotapi.NewInlineKeyboardRow(
