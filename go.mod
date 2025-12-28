@@ -1,17 +1,17 @@
 module tacticus-tg-bot
 
-go 1.24
+go 1.24.0
+
+toolchain go1.24.11
 
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
-	github.com/mattn/go-runewidth v0.0.19
 	github.com/xuri/excelize/v2 v2.10.0
 	golang.org/x/image v0.25.0
 )
 
 require (
-	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/richardlehane/mscfb v1.0.4 // indirect
 	github.com/richardlehane/msoleps v1.0.4 // indirect
 	github.com/tiendc/go-deepcopy v1.7.1 // indirect
