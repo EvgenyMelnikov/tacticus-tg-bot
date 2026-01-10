@@ -39,6 +39,7 @@ const (
 	BombColTimeWidth   = 150 // ширина колонки "Осталось"
 	TokenColCountWidth = 70  // ширина колонки "Токены"
 	TokenColTimeWidth  = 150 // ширина колонки "До следующего"
+	CounterPadding     = 32
 )
 
 func DrawImageWithTables(bombPlayers []tacticus.PlayerData, output string) error {
@@ -136,7 +137,8 @@ func drawBombTable(
 			)
 		}
 
-		c.DrawString(p.Details.Name, freetype.Pt(offsetX+Padding, y2-10))
+		c.DrawString(fmt.Sprintf("%d.", i+1), freetype.Pt(offsetX+Padding, y2-10))
+		c.DrawString(p.Details.Name, freetype.Pt(offsetX+Padding+CounterPadding, y2-10))
 		c.DrawString(timeStr, freetype.Pt(offsetX+ColNameWidth+Padding, y2-10))
 	}
 
@@ -214,8 +216,10 @@ func drawTokenTable(img *image.RGBA, c *freetype.Context, players []tacticus.Pla
 		}
 
 		x := offsetX + 8
+		c.DrawString(fmt.Sprintf("%d.", i+1), freetype.Pt(offsetX+Padding, y2-10))
+		x += CounterPadding
 		c.DrawString(p.Details.Name, freetype.Pt(x, y2-10))
-		x += ColNameWidth
+		x += ColNameWidth - CounterPadding
 		c.DrawString(strconv.Itoa(p.Progress.GuildRaid.Tokens.Current), freetype.Pt(x, y2-10))
 		x += TokenColCountWidth
 		c.DrawString(timeStr, freetype.Pt(x, y2-10))
