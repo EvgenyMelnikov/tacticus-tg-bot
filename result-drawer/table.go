@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	tacticus "tacticus-tg-bot/tacticus-wrapper"
@@ -52,7 +53,14 @@ func DrawImageWithTables(bombPlayers []tacticus.PlayerData, output string) error
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
 	// ---- Шрифт ----
-	fontBytes, err := os.ReadFile("fonts/Arial.ttf")
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	// Путь к шрифту относительно cwd
+	fontPath := filepath.Join(cwd, "fonts", "Arial.ttf")
+	fontBytes, err := os.ReadFile(fontPath)
 	if err != nil {
 		return err
 	}
