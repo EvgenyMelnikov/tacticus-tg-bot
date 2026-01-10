@@ -1,12 +1,12 @@
 package result_drawer
 
 import (
+	_ "embed"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	tacticus "tacticus-tg-bot/tacticus-wrapper"
@@ -15,6 +15,9 @@ import (
 	"github.com/golang/freetype"
 	"golang.org/x/image/draw"
 )
+
+//go:embed fonts/Arial.ttf
+var arialFont []byte
 
 // Основные цвета
 var (
@@ -52,19 +55,7 @@ func DrawImageWithTables(bombPlayers []tacticus.PlayerData, output string) error
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.White}, image.Point{}, draw.Src)
 
-	// ---- Шрифт ----
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	// Путь к шрифту относительно cwd
-	fontPath := filepath.Join(cwd, "fonts", "Arial.ttf")
-	fontBytes, err := os.ReadFile(fontPath)
-	if err != nil {
-		return err
-	}
-	fontParsed, err := freetype.ParseFont(fontBytes)
+	fontParsed, err := freetype.ParseFont(arialFont)
 	if err != nil {
 		return err
 	}
