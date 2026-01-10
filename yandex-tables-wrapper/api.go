@@ -32,7 +32,7 @@ func ReadPlayersFromXLSX(file *excelize.File) ([]Player, error) {
 		})
 	}
 
-	return players[1:], nil
+	return players, nil
 }
 
 func GetYandexDownloadLink(publicLink string) (string, error) {

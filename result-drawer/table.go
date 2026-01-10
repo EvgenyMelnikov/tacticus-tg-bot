@@ -49,7 +49,7 @@ func DrawImageWithTables(bombPlayers []tacticus.PlayerData, output string) error
 	tokenTableWidth := ColNameWidth + TokenColCountWidth + TokenColTimeWidth
 
 	rows := len(bombPlayers)
-	height := RowHeight*(rows+1) + 10
+	height := RowHeight * (rows + 2)
 	width := bombTableWidth + gap + tokenTableWidth
 
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
